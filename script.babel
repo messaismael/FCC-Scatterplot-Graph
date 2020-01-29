@@ -1,0 +1,172 @@
+let dataUrl= "https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/cyclist-data.json"
+ 
+
+
+function PlotGraph (dataset) {
+  
+  const width = 900;
+  const height = 600;
+  const padding = 70;
+  
+  
+  
+  let timeFormat = d3.time.format('%M:%S');
+  
+  // tooltip
+  var div = d3.select("body").append("div")
+  .attr("class", "tooltip")
+  .attr("id", "tooltip")
+  .style("opacity", 0);
+  
+  // X scale
+  const xScale = d3.scale.linear()
+                   .domain([1993, 2016])
+                   .range([padding, width-padding]);
+ 
+  
+  // make the Time property into dataset  a new date object
+  dataset.forEach(function(d) {
+     var parseTime = d.Time.split(':');
+     //format dates by picking an arbitrary epoch and converting on-the-fly
+     d.Time = new Date(2003, 9, 2, 0, parseTime[0], parseTime[1]);
+  });
+  // Y scale
+  const yScale = d3.time.scale()
+                   .domain([dataset[0].Time, dataset[dataset.length-1].Time])
+                   .range([0, height-padding]);
+  
+  
+  
+  
+  const svg = d3.select('#scattplot')
+              .attr({
+                width: width,
+                height: height
+              })
+              //.style('background-color', 'orange')
+              .append('g')
+              .attr({transform:`translate(15,-50)`});
+  
+
+  
+  
+  //the y-axis
+  const yAxis = d3.svg.axis()
+                  .scale(yScale)
+                  .orient('left')
+                  .tickFormat(d3.time.format('%M:%S'));
+  
+  
+  // the x-axis
+  const xAxis = d3.svg.axis()
+                  .scale(xScale)
+                  .orient('bottom')
+                  .tickFormat( (d) => d );
+    
+  // render x axis
+  const xAxisgen = svg.append('g')
+                      .attr('id', 'x-axis')
+                      .attr('transform', `translate(0, ${height})`)
+                      .call(xAxis);
+  
+  // render y axis
+  const yAxisgen = svg.append('g')
+                      .attr('id', 'y-axis')
+                      .attr('transform', `translate(${padding}, ${padding})`)
+                      .call(yAxis);
+  
+  
+  
+    svg.append('text')
+    .attr('transform', 'rotate(-90)')
+    .attr('x', -250)
+    .attr('y', 20)
+    .style('font-size', 18)
+    .text('Time in Minutes');
+  
+  const plot = svg.selectAll('circle')
+                  .data(dataset)
+                  .enter()
+                  .append('circle')
+                  .attr({
+                    cx: (d) => xScale(d.Year),
+                    cy: (d) => yScale(d.Time)+padding,
+                    r:5,
+                    "class": 'dot',
+                    "data-xvalue": (d, i) => dataset[i].Year,
+                    "data-yvalue": (d, i) => dataset[i].Time,
+                    cursor: 'pointer',
+                    opacity: 0.9,
+                   
+                  })
+                  .style('fill', function(d){
+                    if(d.Doping ===''){
+                      return '#E70739'
+                    }else{
+                      return '#5EB6DD'
+                    }
+                  })
+                  .on("mouseover", function(d) {
+                    div.transition().duration(500).style("opacity", .9);
+                    div.attr("data-year", d.Year)
+                    div.html(d.Name + ": " + d.Nationality + "<br/>"
+              + "Year: " +  d.Year + ", Time: " + timeFormat(d.Time) 
+              + (d.Doping?"<br/><br/>" + d.Doping:""))
+                       .style("left", (d3.event.pageX) + "px")
+                       .style("top", (d3.event.pageY - 28) + "px");
+                  })
+                  .on("mouseout", function(d) {
+                    div.transition().duration(200).style("opacity", 0);
+                  });                  
+                 
+  
+  
+  
+    svg.append("circle")
+       .attr({
+         cx: 600,
+         cy: 230,
+         r: 10,
+         id:'legend',
+       })
+       .style("fill", "#5EB6DD")
+  
+    svg.append("circle")
+       .attr({
+          cx:600,
+          cy:260,
+          r: 10,
+          id:'legend',
+       })
+       .style("fill", "#E70739")
+  
+    svg.append("text")
+       .attr({
+          x: 620,
+          y: 230
+       })
+       .text('Riders with doping allegations')
+       .style("font-size", "15px")
+       .attr("alignment-baseline","middle")
+    
+  
+    svg.append("text")
+       .attr({
+          x: 620,
+          y:260
+        })
+       .text('No doping allegations')
+       .style("font-size", "15px").attr("alignment-baseline","middle")
+  
+  
+  
+  
+  
+  
+
+}
+
+
+d3.json( dataUrl, (err, data) => {
+   PlotGraph(data);
+})
